@@ -1,0 +1,7 @@
+import {
+  "moonbit_dev/abyssal_chord" @lib,
+}
+
+options(
+  "is-main": true,
+)
