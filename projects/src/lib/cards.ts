@@ -137,7 +137,7 @@ export const zhongLvCards: Card[] = [
     cost: 1,
     target: 'self',
     effect: '获得 3 点护甲，降低 10 点污染度。',
-    designNote: '3护甲+抽牌=实用的早期节奏调整。',
+    designNote: '3护甲+净化10=实用早期节奏调整。',
     baseArmor: 3,
     purification: 10,
     pollutionModifier: -10,
@@ -290,7 +290,7 @@ export const xianYinCards: Card[] = [
   { id: 'xy-assassin-01', name: '声纹连斩', nameEn: 'Sonic Flurry', type: 'attack', archetype: 'basic', cost: 1, target: 'single', effect: '造成 3 点伤害。可免费再打一次', designNote: '高频快攻，免费连击', baseDamage: 3 },
   { id: 'xy-assassin-02', name: '共振穿刺', nameEn: 'Resonance Pierce', type: 'attack', archetype: 'basic', cost: 2, target: 'single', effect: '造成 7 点伤害。附加 2 层声爆。若已有声爆伤害+3', designNote: '声爆叠层+爆发', baseDamage: 7, sonicBoom: 2 },
   { id: 'xy-assassin-03', name: '超频驱动', nameEn: 'Overclock Drive', type: 'attack', archetype: 'basic', cost: 2, target: 'aoe', effect: '对全体造成 5 点伤害，每有声爆+2', designNote: 'AOE清场', baseDamage: 5 },
-  { id: 'xy-assassin-04', name: '次声潜行', nameEn: 'Infrasonic Stealth', type: 'skill', archetype: 'basic', cost: 1, target: 'self', effect: '下回合首次攻击伤害 +8。获得 3 护甲', designNote: '防守+爆发准备', baseArmor: 3 },
+  { id: 'xy-assassin-04', name: '次声潜行', nameEn: 'Infrasonic Stealth', type: 'skill', archetype: 'basic', cost: 1, target: 'self', effect: '本回合下一张攻击牌伤害 +8。获得 3 点护甲', designNote: '防守+爆发准备', baseArmor: 3 },
   // 回声幻影流 (4张)
   { id: 'xy-echo-01', name: '回声标记', nameEn: 'Echo Mark', type: 'ability', archetype: 'basic', cost: 2, target: 'self', effect: '【永久】每张牌回合末复制效果（伤害减半）', designNote: '一牌双响核心'},
   { id: 'xy-echo-02', name: '相位镜像', nameEn: 'Phase Mirror', type: 'skill', archetype: 'basic', cost: 1, target: 'self', effect: '复制手牌中一张攻击牌（本回合有效）', designNote: '关键牌复制'},

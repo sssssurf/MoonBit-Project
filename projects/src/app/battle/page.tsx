@@ -43,7 +43,7 @@ const DRAW_PER_TURN = 3; // 每回合固定抽取的张数
 type IntentType = "ATTACK" | "DEFEND" | "BUFF" | "DEBUFF";
 
 // 能力类型枚举
-type AbilityType = "FREQUENCY_ANCHOR" | "LOW_FREQUENCY_RESONANCE" | "PAIN_ECHO" | "FINAL_TUNING";
+type AbilityType = "FREQUENCY_ANCHOR" | "LOW_FREQUENCY_RESONANCE" | "PAIN_ECHO" | "FINAL_TUNING" | "ECHO_MARK" | "FULL_SPECTRUM";
 
 // 能力接口
 interface ActiveAbility {
@@ -1295,6 +1295,18 @@ export default function BattleArena() {
     let isFeedbackLoop = selectedCard.id === 'zl-overload-02';
     // 特殊卡牌逻辑：断弦极限
     let isBrokenStringLimit = selectedCard.id === 'zl-overload-03';
+    // 弦音卡牌
+    let isXyBasic01 = selectedCard.id.startsWith('xy-basic-0') && (selectedCard.id.endsWith('1') || selectedCard.id.endsWith('2') || selectedCard.id.endsWith('3') || selectedCard.id.endsWith('4'));
+    let isXyBasic56 = selectedCard.id === 'xy-basic-05' || selectedCard.id === 'xy-basic-06';
+    let isXyBasic78 = selectedCard.id === 'xy-basic-07' || selectedCard.id === 'xy-basic-08';
+    let isXyAssassin01 = selectedCard.id === 'xy-assassin-01';
+    let isXyAssassin02 = selectedCard.id === 'xy-assassin-02';
+    let isXyAssassin03 = selectedCard.id === 'xy-assassin-03';
+    let isXyAssassin04 = selectedCard.id === 'xy-assassin-04';
+    let isXyEcho01 = selectedCard.id === 'xy-echo-01';
+    let isXyEcho02 = selectedCard.id === 'xy-echo-02';
+    let isXyEcho03 = selectedCard.id === 'xy-echo-03';
+    let isXyEcho04 = selectedCard.id === 'xy-echo-04';
     
     let infrasonicDamage = 0;
     let armorLost = 0;
@@ -1402,36 +1414,82 @@ export default function BattleArena() {
       parts.push(`下一张攻击牌伤害 +${damageBonus}`);
       
       aiMessage = `你使用了【${selectedCard.name}】，${parts.join('，')}！`;
-    } else {
-      // 1. 只使用阶段固定数值加成
-      baseDamage = selectedCard.baseDamage || 0;
-      // 必须且只能使用统一的伤害计算方法
+    // ═══════ 弦音卡牌特殊处理 ═══════
+    } else if (isXyBasic01) {
+      // 高频切割：4伤害，有声爆额外+2
+      baseDamage = (selectedCard.baseDamage || 0) + (enemyState.debuffs.find(d => d.type === "SONIC_BOOM") ? 2 : 0);
       finalDamage = calculateActualDamage(baseDamage, pollutionLevel);
-      
-      // 2. 处理护甲获得
-      armorGain = selectedCard.baseArmor || 0;
-      
-      // 3. 强制落实污染度增减 - 使用专门的 pollutionModifier 字段
+      totalDamage = finalDamage;
+      aiMessage = `你打出了【${selectedCard.name}】，${enemyState.debuffs.find(d => d.type === "SONIC_BOOM") ? "声爆联动+2，" : ""}造成 ${finalDamage} 点伤害！`;
+    } else if (isXyBasic56) {
+      // 音纹闪避：4护甲，已出攻击牌额外+3
+      armorGain = (selectedCard.baseArmor || 0) + (cardsPlayedThisTurn > 0 ? 3 : 0);
+      aiMessage = `你使用了【${selectedCard.name}】，获得 ${armorGain} 点护甲！`;
+    } else if (isXyBasic78) {
+      // 谐波感知：抽2张牌，-5污染
+      drawCard(2);
       pollutionModifier = selectedCard.pollutionModifier || 0;
-      
-      // 构建AI消息
+      aiMessage = `你使用了【${selectedCard.name}】，抽2张牌，降低 ${Math.abs(pollutionModifier)} 点污染度！`;
+    } else if (isXyAssassin01) {
+      // 声纹连斩：3伤害，免费再打一次
+      finalDamage = calculateActualDamage(selectedCard.baseDamage || 3, pollutionLevel);
+      totalDamage = finalDamage;
+      setFreeSecondAttackAvailable(true);
+      aiMessage = `你打出了【${selectedCard.name}】，造成 ${finalDamage} 点伤害！可免费再打一次！`;
+    } else if (isXyAssassin02) {
+      // 共振穿刺：7伤害+2声爆，有声爆时+3
+      const hasBoom2 = !!enemyState.debuffs.find(d => d.type === "SONIC_BOOM");
+      baseDamage = (selectedCard.baseDamage || 7) + (hasBoom2 ? 3 : 0);
+      finalDamage = calculateActualDamage(baseDamage, pollutionLevel);
+      totalDamage = finalDamage;
+      aiMessage = `你打出了【${selectedCard.name}】，${hasBoom2 ? "声爆联动+3，" : ""}造成 ${finalDamage} 点伤害，附加2层声爆！`;
+    } else if (isXyAssassin03) {
+      // 超频驱动：5 AOE伤害，每有声爆+2
+      const sbCount2 = enemyState.debuffs.find(d => d.type === "SONIC_BOOM");
+      baseDamage = (selectedCard.baseDamage || 5) + (sbCount2 ? 2 : 0);
+      finalDamage = calculateActualDamage(baseDamage, pollutionLevel);
+      totalDamage = finalDamage;
+      aiMessage = `你打出了【${selectedCard.name}】，造成 ${finalDamage} 点AOE伤害！`;
+    } else if (isXyAssassin04) {
+      // 次声潜行：3护甲，下次攻击+8
+      armorGain = selectedCard.baseArmor || 3;
+      setNextAttackDamageBonus(prev => prev + 8);
+      aiMessage = `你使用了【${selectedCard.name}】，获得 ${armorGain} 点护甲，下次攻击 +8！`;
+    } else if (isXyEcho02) {
+      // 相位镜像：复制手牌中一张攻击牌
+      const atkCard = hand.find((c: Card) => c.type === 'attack' && `${c.id}_${c.uid}` !== selectedCardUid);
+      if (atkCard && hand.length < MAX_HAND_SIZE) {
+        setHand(prev => [...prev, { ...atkCard, uid: `${atkCard.id}_${uidCounterRef.current++}` } as CardWithUid]);
+        aiMessage = `你使用了【${selectedCard.name}】，复制了 【${atkCard.name}】！`;
+      } else {
+        aiMessage = `你使用了【${selectedCard.name}】，没有可复制的攻击牌。`;
+      }
+    } else if (isXyEcho03) {
+      // 残响追击：6伤害，打出3张以上翻倍
+      baseDamage = (selectedCard.baseDamage || 6) * (cardsPlayedThisTurn >= 3 ? 2 : 1);
+      finalDamage = calculateActualDamage(baseDamage, pollutionLevel);
+      totalDamage = finalDamage;
+      aiMessage = `你打出了【${selectedCard.name}】，${cardsPlayedThisTurn >= 3 ? "连击翻倍！" : ""}造成 ${finalDamage} 点伤害！`;
+    } else if (isXyEcho01 || isXyEcho04) {
+      // 回声标记/全频共振：能力牌
+      aiMessage = `你激活了【${selectedCard.name}】，能力将永久生效！`;
+    } else {
+      // 通用卡牌处理
+      baseDamage = selectedCard.baseDamage || 0;
+      finalDamage = calculateActualDamage(baseDamage, pollutionLevel);
+      armorGain = selectedCard.baseArmor || 0;
+      pollutionModifier = selectedCard.pollutionModifier || 0;
+
       if (selectedCard.type === "attack" && finalDamage > 0) {
-        const parts: string[] = [];
-        parts.push(`基础伤害 ${baseDamage} 点`);
-        if (phaseConfig.damageBonus > 0) parts.push(`阶段增益 ${phaseConfig.damageBonus} 点`);
-        if (selfDamageAmount > 0) parts.push(`自伤 ${selfDamageAmount} 点`);
-        
-        aiMessage = `你打出了【${selectedCard.name}】，${parts.join('，')}，总计造成 ${finalDamage} 点伤害！`;
+        aiMessage = `你打出了【${selectedCard.name}】，造成 ${finalDamage} 点伤害！`;
         totalDamage = finalDamage;
       } else if (selectedCard.type === "skill") {
         const parts: string[] = [];
         if (armorGain > 0) parts.push(`获得 ${armorGain} 点护甲`);
         if (pollutionModifier < 0) parts.push(`降低 ${Math.abs(pollutionModifier)} 点污染度`);
-        if (pollutionModifier > 0) parts.push(`增加 ${pollutionModifier} 点污染度`);
         if (selfDamageAmount > 0) parts.push(`自伤 ${selfDamageAmount} 点`);
         aiMessage = `你使用了【${selectedCard.name}】，${parts.join('，')}！`;
       } else if (selectedCard.type === "ability") {
-        // 能力牌：直接激活永久效果
         aiMessage = `你激活了【${selectedCard.name}】，能力将永久生效！`;
       } else {
         aiMessage = `你使用了【${selectedCard.name}】！`;
@@ -1546,6 +1604,12 @@ export default function BattleArena() {
           break;
         case "zl-ability-04":
           abilityType = "FINAL_TUNING";
+          break;
+        case "xy-echo-01":
+          abilityType = "ECHO_MARK";
+          break;
+        case "xy-echo-04":
+          abilityType = "FULL_SPECTRUM";
           break;
       }
       
@@ -1923,6 +1987,8 @@ export default function BattleArena() {
                         case "LOW_FREQUENCY_RESONANCE": iconColor = "bg-sonic-purple"; break;
                         case "PAIN_ECHO": iconColor = "bg-danger-red"; break;
                         case "FINAL_TUNING": iconColor = "bg-gold"; break;
+                        case "ECHO_MARK": iconColor = "bg-purple-500"; break;
+                        case "FULL_SPECTRUM": iconColor = "bg-orange-500"; break;
                       }
                       
                       return (
@@ -1985,6 +2051,16 @@ export default function BattleArena() {
                             displayName = "终末定音";
                             displayDesc = `≤${config.lowHpThreshold}HP时+${config.lowHpDamageBonus}伤害/${config.lowHpDotDamage}DOT`;
                             iconColor = "text-gold";
+                            break;
+                          case "ECHO_MARK":
+                            displayName = "回声标记";
+                            displayDesc = "每张牌回合末复制效果（伤害减半）";
+                            iconColor = "text-purple-500";
+                            break;
+                          case "FULL_SPECTRUM":
+                            displayName = "全频共振";
+                            displayDesc = "附加声爆时额外+1层，声爆伤害+50%";
+                            iconColor = "text-orange-500";
                             break;
                         }
                         
