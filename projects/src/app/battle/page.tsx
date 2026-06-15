@@ -37,7 +37,7 @@ interface CardWithUid extends Card {
 
 // 全局常量
 const MAX_HAND_SIZE = 6; // 手牌上限严格限制为 6 张
-const DRAW_PER_TURN = 2; // 每回合固定抽取的张数
+const DRAW_PER_TURN = 3; // 每回合固定抽取的张数
 
 // 敌人意图类型枚举
 type IntentType = "ATTACK" | "DEFEND" | "BUFF" | "DEBUFF";
