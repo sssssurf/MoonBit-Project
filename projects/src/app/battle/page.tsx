@@ -766,25 +766,19 @@ export default function BattleArena() {
     buffs: [],
     debuffs: []
   });
-  // 测试牌组：包含钟律+弦音+新卡牌（和重新挑战时一致）
+  // 牌组：钟律20张 + 弦音12张
   const testDeck: Card[] = [
-    // 钟律基础牌
     zhongLvCards[0], zhongLvCards[1], zhongLvCards[4], zhongLvCards[5],
     zhongLvCards[8], zhongLvCards[9],
-    // 钟律堡垒流
     zhongLvCards[10], zhongLvCards[11], zhongLvCards[12],
-    // 钟律过载流
     zhongLvCards[13], zhongLvCards[14], zhongLvCards[15],
-    // 钟律能力牌
     zhongLvCards[16], zhongLvCards[17], zhongLvCards[18], zhongLvCards[19],
-    // 弦音牌
     xianYinCards[0], xianYinCards[4], xianYinCards[6],
     xianYinCards[8], xianYinCards[9], xianYinCards[10], xianYinCards[11],
     xianYinCards[12], xianYinCards[13], xianYinCards[14], xianYinCards[15],
-    // 补充基础
     zhongLvCards[0], zhongLvCards[1], zhongLvCards[4],
   ];
-  
+
   // 初始牌库 = 完整牌库 - 初始手牌
   const initialDeck = testDeck.filter(card => !INITIAL_HAND_CARDS.includes(card));
   
@@ -898,7 +892,6 @@ export default function BattleArena() {
 
   // 战斗记录辅助函数
   const addJudgeMessage = (text: string, typing: boolean = false) => {
-    addCombatLog(text);
     setDialogMessages(prev => {
       const lastMessage = prev[prev.length - 1];
       if (lastMessage && lastMessage.text === text) return prev;
@@ -995,14 +988,14 @@ export default function BattleArena() {
       setEnemyState(prev => ({ ...prev, hp: newHp, armor: newArmor }));
     }
     
-    // 战斗记录：护甲消耗和生命值变化
-    const targetLabel = target === "player" ? "调音师" : state.enemy.name;
+    // 战斗记录
+    const targetLabel = target === "player" ? "调音师" : (enemyName || "敌人");
     if (armorConsumed > 0 && trueDamage > 0) {
-      addCombatLog(`${targetLabel} 护甲-${armorConsumed} → 剩余护甲${newArmor}，HP-${trueDamage} → 剩余HP${newHp}`);
+      addCombatLog(`${targetLabel} 护甲-${armorConsumed}(剩余${newArmor}) HP-${trueDamage}(剩余${newHp})`);
     } else if (armorConsumed > 0) {
-      addCombatLog(`${targetLabel} 护甲-${armorConsumed} → 剩余护甲${newArmor} (HP:${newHp})`);
+      addCombatLog(`${targetLabel} 护甲-${armorConsumed}(剩余${newArmor})`);
     } else if (trueDamage > 0) {
-      addCombatLog(`${targetLabel} ${isPiercing?'穿透':''}伤害 -${trueDamage} → 剩余HP ${newHp}`);
+      addCombatLog(`${targetLabel} 受${trueDamage}伤害(HP=${newHp})`);
     }
 
     // 第8步：播放伤害音效（只有玩家受伤时才播放）
@@ -1041,8 +1034,9 @@ export default function BattleArena() {
     setArmorGainedThisTurn(prev => prev + amount);
     
     // 3. 战斗记录
-    const totalArmorAfter = playerState.armor + amount;
-    addCombatLog(`🛡️ 获得 ${amount} 点护甲 → 当前护甲 ${totalArmorAfter} | HP:${playerState.hp}`);
+    const tapeThisTurn = armorGainedThisTurn + amount;
+    addCombatLog(`🛡️ 获得${amount}护甲(本回合+${tapeThisTurn}|总${playerState.armor+amount}|HP${playerState.hp})`);
+    addJudgeMessage(`你获得了 ${amount} 点护甲！`);
     
     // 3. ========== "获得护甲"检查点 ==========
     // 遍历持久化能力列表，检查是否有对应的能力需要触发
@@ -1165,7 +1159,7 @@ export default function BattleArena() {
     setSelectedCardUid(null);
     setCurrentIntention(getSimpleEnemyIntention());
     setIsProcessing(false);
-    const testDeckSame = [
+    const testDeck2 = [
       zhongLvCards[0], zhongLvCards[1], zhongLvCards[4], zhongLvCards[5],
       zhongLvCards[8], zhongLvCards[9],
       zhongLvCards[10], zhongLvCards[11], zhongLvCards[12],
@@ -1177,7 +1171,7 @@ export default function BattleArena() {
       zhongLvCards[0], zhongLvCards[1], zhongLvCards[4],
     ];
 
-    setDeck(addUidsToCards(testDeckSame));
+    setDeck(addUidsToCards(testDeck2));
     setDiscardPile([]);
     setGameOver(false);
     setGameResult(null);
@@ -1569,9 +1563,6 @@ export default function BattleArena() {
       gainArmor(harmonicBonusArmor);
     }
     
-    // 战斗记录：打出卡牌
-    addCombatLog(`🎴 ${selectedCard.name} (${selectedCard.type==="attack"?"攻击":selectedCard.type==="skill"?"技能":"能力"} | ${selectedCard.cost}AP) → ${selectedCard.effect}`);
-
     // 移除打出的手牌，并加入弃牌堆（除非是消耗牌或能力牌）
     // 能力牌永远被消耗，不进入弃牌堆
     if (!selectedCard.exhaust && !isAbilityCard) {
@@ -1603,7 +1594,8 @@ export default function BattleArena() {
     setSelectedCardUid(null);
     setShowHint(false);
     resetTimer();
-    
+    const enemyName = enemyName;
+
     try {
       // 获取当前阶段配置
       const phaseConfig = getPollutionLevel(pollutionLevel);
@@ -1622,6 +1614,7 @@ export default function BattleArena() {
       const sonicBoomEffect = enemyState.debuffs.find(d => d.type === "SONIC_BOOM");
       if (sonicBoomEffect && sonicBoomEffect.stacks > 0) {
         const sonicBoomDamage = sonicBoomEffect.stacks * 2;
+        addCombatLog(`🔊 声爆爆发! ${sonicBoomEffect.stacks}层×2=${sonicBoomDamage}伤害`);
         takeDamage("enemy", sonicBoomDamage);
         // 清除声爆状态
         setEnemyState(prev => ({
@@ -1636,29 +1629,27 @@ export default function BattleArena() {
       // 根据敌人意图类型触发对应的动画
       let actionText = "";
       let actionMsgText = "";
-      const enemyLabel = enemyState.name || "敌人";
-
+      
       switch (currentIntention.intentType) {
         case "ATTACK":
-          actionText = `${enemyLabel}正在蓄力...`;
-          actionMsgText = `${enemyLabel}发起了冲撞！造成 ${currentIntention.value} 点伤害！`;
+          actionText = "嘶鸣游荡者正在蓄力...";
+          actionMsgText = `嘶鸣游荡者向你发起了猛烈冲撞！造成 ${currentIntention.value} 点伤害！`;
           setEnemyAnimationState("attack");
-          addCombatLog(`👹 ${enemyLabel} 攻击意图: ${currentIntention.value} 点伤害 (污染加成后: ${getPollutionLevel(pollutionLevel).damageBonus})`);
           break;
         case "DEFEND":
-          actionText = `${enemyLabel}正在构建声学护盾...`;
-          actionMsgText = `${enemyLabel}进入防御姿态，获得了 ${currentIntention.value} 点护盾！`;
+          actionText = "嘶鸣游荡者正在构建声学护盾...";
+          actionMsgText = `嘶鸣游荡者进入防御姿态，获得了 ${currentIntention.value} 点护盾！`;
           setEnemyAnimationState("defend");
-          addCombatLog(`👹 ${enemyLabel} 防御: 获得 ${currentIntention.value} 点护甲`);
           break;
         case "BUFF":
         case "DEBUFF":
-          actionText = `${enemyLabel}正在积蓄污染能量...`;
-          actionMsgText = `${enemyLabel}的能量在涌动！污染度增加了 ${currentIntention.value}！`;
+          actionText = "嘶鸣游荡者正在积蓄污染能量...";
+          actionMsgText = `嘶鸣游荡者的能量在涌动！污染度增加了 ${currentIntention.value}！`;
           setEnemyAnimationState("buff");
-          addCombatLog(`👹 ${enemyLabel} 强化: 污染度 +${currentIntention.value}`);
           break;
       }
+      // 记录敌人意图
+      addCombatLog(`👹 ${enemyName} 意图: ${currentIntention.intentType === "ATTACK" ? currentIntention.value + "伤害" : currentIntention.intentType === "DEFEND" ? currentIntention.value + "护甲" : "污染+" + currentIntention.value}`);
       
       const chargingMsg = { id: Date.now(), text: actionText, isTyping: true };
       setDialogMessages(prev => [...prev, chargingMsg]);
@@ -1714,7 +1705,7 @@ export default function BattleArena() {
         
         await new Promise(resolve => setTimeout(resolve, 400));
         
-        setEnemyState(prev => { const na = prev.armor + currentIntention.value; addCombatLog(`👹 ${enemyLabel} 护甲 +${currentIntention.value} → ${na}`); return { ...prev, armor: na }; });
+        setEnemyState(prev => { const na = prev.armor + currentIntention.value; addCombatLog(`👹 ${enemyName} 护甲+${currentIntention.value}→${na}`); return { ...prev, armor: na }; });
 
         // 完成打字效果
         setTimeout(() => {
@@ -1726,14 +1717,15 @@ export default function BattleArena() {
         // 敌人强化 - 增加污染度
         const buffMsg = { id: Date.now() + 1, text: actionMsgText, isTyping: true };
         setDialogMessages(prev => [...prev, buffMsg]);
-        
+
         // 实际增加污染度
         await new Promise(resolve => setTimeout(resolve, 400));
-        setPollutionLevel(prev => { const v = Math.min(100, prev + currentIntention.value); addCombatLog(`👹 ${enemyLabel} 强化: 污染度 ${prev} → ${v}`); return v; });
-
+        const oldPol = pollutionLevel;
+        setPollutionLevel(prev => { const v = Math.min(100, prev + currentIntention.value); addCombatLog(`👹 ${enemyName} 污染度 ${oldPol}→${v}`); return v; });
+        
         // 完成打字效果
         setTimeout(() => {
-          setDialogMessages(prev => prev.map(m =>
+          setDialogMessages(prev => prev.map(m => 
             m.id === chargingMsg.id || m.id === buffMsg.id ? { ...m, isTyping: false } : m
           ));
         }, 800);
@@ -1756,11 +1748,11 @@ export default function BattleArena() {
       setHand(cardsToKeep);
       
       // 重置回合
-      const oldPollution = pollutionLevel;
-      setTurn(prev => { const t = prev + 1; addCombatLog(`⏳ 第 ${t} 回合开始`); return t; });
+      setTurn(prev => { const t = prev + 1; addCombatLog(`⏳ 第${t}回合开始`); return t; });
       setCurrentIntention(getSimpleEnemyIntention());
-      setPollutionLevel(prev => { const v = Math.min(100, prev + 5); addCombatLog(`🌫️ 污染度 ${oldPollution} → ${v}`); return v; });
-      
+      const oldPollution2 = pollutionLevel;
+      setPollutionLevel(prev => { const v = Math.min(100, prev + 5); addCombatLog(`🌫️ 污染度 ${oldPollution2}→${v}`); return v; });
+
       // 回合开始：恢复能量并固定摸牌
       startTurn();
       
