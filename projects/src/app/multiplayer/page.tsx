@@ -447,7 +447,7 @@ const HandCard = ({
             {card.target === "single" ? "单体" : card.target === "aoe" ? "群体" : "自身"}
           </p>
           <div className="flex-1 text-sm text-slate-300 leading-relaxed overflow-y-auto">
-            {card.effect}
+            {card.effect.replace(/[，,]?\s*(降低|减少)\s*\d+\s*点污染度/g, '').replace(/[，,]?\s*污染度\s*\+\s*\d+/g, '').replace(/[，,]?\s*污染刻度尺\s*\+\s*\d+/g, '').replace(/[，,]?\s*使污染度\s*\+\d+/g, '')}
           </div>
         </div>
       </div>

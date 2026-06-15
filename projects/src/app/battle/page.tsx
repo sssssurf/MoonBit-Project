@@ -1549,12 +1549,10 @@ export default function BattleArena() {
           break;
       }
       
-      // 激活能力（如果还没有激活过）
-      if (abilityType && !activeAbilities.find(a => a.id === abilityType)) {
+      // 激活永久能力
+      if (abilityType) {
         setActiveAbilities(prev => [...prev, { id: abilityType, cardId: selectedCard.id }]);
         addCombatLog(`🔮 激活永久能力: ${selectedCard.name}`);
-      } else if (abilityType) {
-        addCombatLog(`🔮 ${selectedCard.name} (已激活，本次仅触发效果)`);
       }
 
       setTimeout(() => setIsUsingAbility(false), 600);
