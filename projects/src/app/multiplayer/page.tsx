@@ -546,13 +546,15 @@ export default function MultiplayerBattle() {
       },
       onOpen: () => {
         setIsConnected(true);
-        setConnectionError(null);
+        addCombatLog("🔌 已连接到服务器");
       },
       onClose: () => {
         setIsConnected(false);
+        addCombatLog("🔌 连接断开");
       },
       onError: (error) => {
         setConnectionError(error);
+        addCombatLog(`⚠️ 连接错误: ${error}`);
       },
     });
     wsRef.current = ws;
@@ -612,15 +614,18 @@ export default function MultiplayerBattle() {
 
     // 发送出牌消息
     wsRef.current.sendPlayCard(card.id);
+    const enemyName = getEnemyPlayer()?.name || "对手";
+    addCombatLog(`🎴 打出: ${card.name} (${card.type==="attack"?"攻击":card.type==="skill"?"技能":"能力"} | ${card.cost}AP)`);
     setSelectedCardUid(null);
-  }, [gameState, getCurrentPlayer, isMyTurn, playerId, playNormalAttack, playFreezeAbility]);
+  }, [gameState, getCurrentPlayer, isMyTurn, playerId, playNormalAttack, playFreezeAbility, getEnemyPlayer, addCombatLog]);
 
   // 处理结束回合
   const handleEndTurn = useCallback(() => {
     if (!wsRef.current || !isMyTurn()) return;
     wsRef.current.sendEndTurn();
+    addCombatLog("⏭️ 结束回合");
     setSelectedCardUid(null);
-  }, [isMyTurn]);
+  }, [isMyTurn, addCombatLog]);
 
   // 倒计时逻辑
   useEffect(() => {
@@ -662,11 +667,12 @@ export default function MultiplayerBattle() {
     // 检测游戏结束，播放对应音效
     if (gameState.phase === 'ended' && !hasPlayedEndSoundRef.current) {
       hasPlayedEndSoundRef.current = true;
-      // 检查当前玩家是否是赢家
       if (currentPlayer?.isWinner) {
         playVictory();
+        addCombatLog("🏆 你赢得了对战!");
       } else {
         playFail();
+        addCombatLog("💀 对方赢得了对战");
       }
     }
     
@@ -706,11 +712,17 @@ export default function MultiplayerBattle() {
             if (hpLost > 0) {
               addFloatingText('ME', hpLost, 'HP');
             }
+            // 战斗记录
+            if (armorLost > 0 && hpLost > 0) {
+              addCombatLog(`👹 ${enemy?.name||"对手"} 造成${totalDamage}伤害: 护甲-${armorLost}(剩${currentArmor}) HP-${hpLost}(剩${currentHp})`);
+            } else if (hpLost > 0) {
+              addCombatLog(`🔻 受${hpLost}伤害 → HP ${currentHp}`);
+            }
           }
         }
       }
     }
-    
+
     // 检测敌人受伤，添加飘字
     if (enemy && prevGameStateRef.current) {
       const enemyPlayerId = Object.keys(prevGameStateRef.current.players).find(id => id !== playerId);
@@ -734,12 +746,40 @@ export default function MultiplayerBattle() {
             if (hpLost > 0) {
               addFloatingText('ENEMY', hpLost, 'HP');
             }
+            // 战斗记录
+            if (armorLost > 0 && hpLost > 0) {
+              addCombatLog(`⚔️ 对${enemy.name}造成伤害: 护甲-${armorLost}(剩${currentArmor}) HP-${hpLost}(剩${currentHp})`);
+            } else if (armorLost > 0) {
+              addCombatLog(`⚔️ ${enemy.name} 护甲-${armorLost}(剩${currentArmor})`);
+            } else if (hpLost > 0) {
+              addCombatLog(`⚔️ ${enemy.name} HP-${hpLost}(剩${currentHp})`);
+            }
           }
         }
       }
     }
-    
-    // 保存当前状态为上一次的状态
+
+    // 检测敌人护甲增加（防御/buff）
+    if (enemy && prevGameStateRef.current) {
+      const enemyPlayerId = Object.keys(prevGameStateRef.current.players).find(id => id !== playerId);
+      if (enemyPlayerId) {
+        const prevEnemy = prevGameStateRef.current.players[enemyPlayerId];
+        if (prevEnemy && enemy.armor > prevEnemy.armor) {
+          const gained = enemy.armor - prevEnemy.armor;
+          addCombatLog(`🛡️ ${enemy.name} 获得${gained}护甲 → 总计${enemy.armor}`);
+        }
+        // 检测我自己的护甲增加
+        if (currentPlayer && currentPlayer.armor > (prevGameStateRef.current.players[playerId]?.armor || 0)) {
+          const gained = currentPlayer.armor - (prevGameStateRef.current.players[playerId]?.armor || 0);
+          addCombatLog(`🛡️ 获得${gained}护甲 → 总计${currentPlayer.armor} | HP:${currentPlayer.hp}`);
+        }
+      }
+    }
+
+    // 检测回合切换
+    if (prevGameStateRef.current && gameState.turnNumber > prevGameStateRef.current.turnNumber) {
+      addCombatLog(`⏳ 第${gameState.turnNumber}回合 | ${gameState.currentPlayerId===playerId?'你的回合':'对手回合'}`);
+    }
     prevGameStateRef.current = gameState;
 
     // 反过来！当我打出攻击牌时，让对方的剑挥动
@@ -755,7 +795,7 @@ export default function MultiplayerBattle() {
       setTimeout(() => setShowMySwordSwing(false), 500);
     }
     prevEnemySwordSwingRef.current = enemy?.turnState.isSwordSwinging || false;
-  }, [gameState, getCurrentPlayer, getEnemyPlayer, playShieldBlock, playRealAttack, playEeeee, playVictory, playFail, addFloatingText]);
+  }, [gameState, getCurrentPlayer, getEnemyPlayer, playShieldBlock, playRealAttack, playEeeee, playVictory, playFail, addFloatingText, addCombatLog, playerId]);
 
   // 转换卡牌数据格式
   const getPlayerHandWithUids = useCallback((player: any): CardWithUid[] => {
