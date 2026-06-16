@@ -12,13 +12,13 @@ pub enum CardArchetype {
   Basic     // 基础流派
   Fortress  // 低频堡垒流
   Overload  // 过载冲击流
-}
+} derive(Eq)
 
 pub enum CardTarget {
   Single  // 单体
   Self    // 自身
   Aoe     // 群体
-}
+} derive(Eq)
 
 // ─── 卡牌数据结构 ───
 pub struct Card {
