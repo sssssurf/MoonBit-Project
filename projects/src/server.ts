@@ -432,6 +432,42 @@ multiplayerWss.on('connection', (ws: WebSocket) => {
           break;
         }
         
+        case 'game:leave': {
+          if (!currentRoomId || !currentPlayerId) break;
+
+          const gameRoom3 = gameRooms.get(currentRoomId);
+          if (gameRoom3) {
+            gameRoom3.playerWsMap.delete(currentPlayerId);
+
+            // 通知剩余玩家：对手已退出
+            gameRoom3.playerWsMap.forEach((remainingWs) => {
+              if (remainingWs.readyState === WebSocket.OPEN) {
+                remainingWs.send(JSON.stringify({
+                  type: 'opponent-left',
+                  payload: { message: '对手已退出房间，你获得了胜利！' }
+                }));
+              }
+            });
+
+            if (gameRoom3.playerWsMap.size === 0) {
+              gameRooms.delete(currentRoomId);
+            }
+          }
+
+          // 同时清理大厅房间
+          const lobbyRoom2 = rooms.get(currentRoomId);
+          if (lobbyRoom2) {
+            lobbyRoom2.isGameStarted = false;
+            lobbyRoom2.players.delete(currentPlayerId);
+            if (lobbyRoom2.players.size === 0) {
+              rooms.delete(currentRoomId);
+            } else {
+              broadcastRoomState(currentRoomId);
+            }
+          }
+          break;
+        }
+
         case 'turn:end': {
           if (!currentRoomId || !currentPlayerId) break;
           
@@ -461,14 +497,30 @@ multiplayerWss.on('connection', (ws: WebSocket) => {
   });
 
   ws.on('close', () => {
-    console.log('Multiplayer client disconnected');
-    
+    console.log('Multiplayer client disconnected:', currentPlayerId);
+
     if (currentRoomId && currentPlayerId) {
       const gameRoom = gameRooms.get(currentRoomId);
       if (gameRoom) {
         gameRoom.playerWsMap.delete(currentPlayerId);
-        
-        // 如果房间为空，删除它
+
+        // 通知剩余玩家：对手已退出
+        gameRoom.playerWsMap.forEach((remainingWs) => {
+          if (remainingWs.readyState === WebSocket.OPEN) {
+            remainingWs.send(JSON.stringify({
+              type: 'opponent-left',
+              payload: { message: '对手已退出房间，你获得了胜利！' }
+            }));
+          }
+        });
+
+        // 同时通知大厅中的房间更新
+        broadcastToRoom(currentRoomId, {
+          type: 'player-disconnected',
+          payload: { playerId: currentPlayerId, message: '对手断开连接' }
+        });
+
+        // 如果房间为空，删除游戏房间
         if (gameRoom.playerWsMap.size === 0) {
           gameRooms.delete(currentRoomId);
         }

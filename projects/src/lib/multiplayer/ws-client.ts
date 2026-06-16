@@ -7,13 +7,14 @@ interface MultiplayerWsOptions {
   playerId: string;
   playerName?: string;
   onGameStateUpdate?: (gameState: MultiplayerGameState) => void;
+  onOpponentLeft?: (message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
   onError?: (error: string) => void;
 }
 
 export function createMultiplayerWsConnection(options: MultiplayerWsOptions) {
-  const { roomId, playerId, playerName, onGameStateUpdate, onOpen, onClose, onError } = options;
+  const { roomId, playerId, playerName, onGameStateUpdate, onOpponentLeft, onOpen, onClose, onError } = options;
 
   const conn = createWsConnection({
     path: '/ws/multiplayer',
@@ -36,6 +37,9 @@ export function createMultiplayerWsConnection(options: MultiplayerWsOptions) {
       switch (msg.type) {
         case 'game:state':
           onGameStateUpdate?.((msg.payload as { gameState: MultiplayerGameState }).gameState);
+          break;
+        case 'opponent-left':
+          onOpponentLeft?.((msg.payload as { message: string }).message);
           break;
         case 'error':
           onError?.((msg.payload as { message: string }).message);

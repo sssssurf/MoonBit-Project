@@ -485,6 +485,8 @@ export default function MultiplayerBattle() {
   
   // UI状态
   const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
+  const [showOpponentLeft, setShowOpponentLeft] = useState(false);
+  const [opponentLeftMsg, setOpponentLeftMsg] = useState("");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showEnergyWarning, setShowEnergyWarning] = useState(false);
   const [showCardPlayEffect, setShowCardPlayEffect] = useState<{ show: boolean; type: "attack" | "skill" }>({ show: false, type: "attack" });
@@ -532,6 +534,14 @@ export default function MultiplayerBattle() {
         setGameState(state);
         setTurn(state.turnNumber);
         setIsJoining(false);
+      },
+      onOpponentLeft: (message) => {
+        // 对手退出，显示提示并退回大厅
+        setShowOpponentLeft(true);
+        setOpponentLeftMsg(message);
+        setTimeout(() => {
+          router.push('/lobby');
+        }, 4000);
       },
       onOpen: () => {
         setIsConnected(true);
@@ -1423,6 +1433,26 @@ export default function MultiplayerBattle() {
                 请选择其他卡牌或点击「结束回合」
               </p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 对手退出提示 */}
+      <AnimatePresence>
+        {showOpponentLeft && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-900/95 border-2 border-yellow-500/40 rounded-3xl p-10 text-center shadow-2xl max-w-md"
+            >
+              <div className="text-5xl mb-4">🏆</div>
+              <h2 className="text-3xl font-black text-yellow-400 mb-4">对手已退出</h2>
+              <p className="text-slate-400 mb-6">{opponentLeftMsg}</p>
+              <p className="text-xs text-slate-500">即将返回大厅...</p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
