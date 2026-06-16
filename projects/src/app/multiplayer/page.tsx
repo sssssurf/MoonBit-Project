@@ -18,6 +18,7 @@ import {
   TrendingDown,
   Sparkles,
   Target,
+  User,
 } from "lucide-react";
 import { Card, zhongLvCards } from "@/lib/cards";
 import { cn } from "@/lib/utils";
