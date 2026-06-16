@@ -1513,6 +1513,15 @@ export default function BattleArena() {
     // 4. 处理声爆效果
     const sonicBoomStacks = selectedCard.sonicBoom || 0;
     if (sonicBoomStacks > 0 && selectedCard.type === "attack") {
+      // 全频共振：附加声爆层数+1
+      const hasFullSpectrum = activeAbilities.find(a => a.id === "FULL_SPECTRUM");
+      const effectiveStacks = sonicBoomStacks + (hasFullSpectrum ? 1 : 0);
+      // 回声标记：附加声爆时额外造成2点伤害
+      const hasEchoMark = activeAbilities.find(a => a.id === "ECHO_MARK");
+      if (hasEchoMark) {
+        setTimeout(() => takeDamage("enemy", 2), 200);
+        aiMessage += ' 【回声标记】额外2点伤害！';
+      }
       setEnemyState(prev => {
         const existingSonicBoom = prev.debuffs.find(d => d.type === "SONIC_BOOM");
         const newDebuffs = prev.debuffs.filter(d => d.type !== "SONIC_BOOM");
@@ -1520,7 +1529,7 @@ export default function BattleArena() {
           ...prev,
           debuffs: [
             ...newDebuffs,
-            { type: "SONIC_BOOM", stacks: (existingSonicBoom?.stacks || 0) + sonicBoomStacks }
+            { type: "SONIC_BOOM", stacks: (existingSonicBoom?.stacks || 0) + effectiveStacks }
           ]
         };
       });
@@ -1675,11 +1684,13 @@ export default function BattleArena() {
         takeDamage("player", phaseConfig.playerPiercingDmg, true);
       }
       
-      // 结算声爆伤害（每层2点）
+      // 结算声爆伤害（每层2点，全频共振3点）
       const sonicBoomEffect = enemyState.debuffs.find(d => d.type === "SONIC_BOOM");
       if (sonicBoomEffect && sonicBoomEffect.stacks > 0) {
-        const sonicBoomDamage = sonicBoomEffect.stacks * 2;
-        addCombatLog(`🔊 声爆爆发! ${sonicBoomEffect.stacks}层×2=${sonicBoomDamage}伤害`);
+        const hasFullSpectrum2 = activeAbilities.find(a => a.id === "FULL_SPECTRUM");
+        const dmgPerStack = hasFullSpectrum2 ? 3 : 2;
+        const sonicBoomDamage = sonicBoomEffect.stacks * dmgPerStack;
+        addCombatLog(`🔊 声爆爆发! ${sonicBoomEffect.stacks}层×${dmgPerStack}=${sonicBoomDamage}伤害${hasFullSpectrum2?' (全频共振加成)':''}`);
         takeDamage("enemy", sonicBoomDamage);
         // 清除声爆状态
         setEnemyState(prev => ({

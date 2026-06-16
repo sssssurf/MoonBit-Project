@@ -1,6 +1,6 @@
 // 多人对战游戏逻辑 - 完全复⽤单人模式
 import { Card, zhongLvCards, xianYinCards, INITIAL_HAND_CARDS } from '@/lib/cards';
-import type { MultiplayerGameState, MultiplayerPlayer, ActionLog, Debuff } from './types';
+import type { MultiplayerGameState, MultiplayerPlayer, ActionLog, Debuff, ActiveAbility } from './types';
 
 // 游戏常量
 const INITIAL_HP = 80;
@@ -396,8 +396,13 @@ export function handlePlayCard(
         if (dmg > 0) { enemy.hp = Math.max(0, enemy.hp - dmg); }
       }
       if (enemy) {
+        // 全频共振：附加声爆+1层；回声标记：附加声爆时额外2伤害
+        const hasFullSpectrum2 = player.permanentAbilities.find((a: ActiveAbility) => a.id === 'FULL_SPECTRUM');
+        const hasEchoMark2 = player.permanentAbilities.find((a: ActiveAbility) => a.id === 'ECHO_MARK');
+        const extraSt = hasFullSpectrum2 ? 3 : 2;
+        if (hasEchoMark2) { enemy.hp = Math.max(0, enemy.hp - 2); }
         const sb = enemy.debuffs.find((d: Debuff) => d.type === 'SONIC_BOOM');
-        if (sb) { sb.stacks += 2; } else { enemy.debuffs.push({ type: 'SONIC_BOOM', stacks: 2 }); }
+        if (sb) { sb.stacks += extraSt; } else { enemy.debuffs.push({ type: 'SONIC_BOOM', stacks: extraSt }); }
       }
       break;
 
@@ -542,15 +547,23 @@ export function handlePlayCard(
 
       // 声爆效果：给敌方添加声爆 debuff（仅攻击牌触发）
       if (card.sonicBoom && enemy && card.type === 'attack') {
-        const sonicBoomStacks = card.sonicBoom;
+        const hasFullSpectrum = player.permanentAbilities.find((a: ActiveAbility) => a.id === 'FULL_SPECTRUM');
+        const extraStacks = hasFullSpectrum ? 1 : 0;
+        const effectiveStacks = card.sonicBoom + extraStacks;
+
+        // 回声标记：附加声爆时额外2点伤害
+        const hasEchoMark = player.permanentAbilities.find((a: ActiveAbility) => a.id === 'ECHO_MARK');
+        if (hasEchoMark && enemy) {
+          enemy.hp = Math.max(0, enemy.hp - 2);
+        }
+
         const existingSonicBoom = enemy.debuffs.find((d: Debuff) => d.type === 'SONIC_BOOM');
-        
         if (existingSonicBoom) {
-          existingSonicBoom.stacks += sonicBoomStacks;
+          existingSonicBoom.stacks += effectiveStacks;
         } else {
           enemy.debuffs.push({
             type: 'SONIC_BOOM',
-            stacks: sonicBoomStacks
+            stacks: effectiveStacks
           });
         }
       }
@@ -613,10 +626,13 @@ export function nextPlayer(gameState: MultiplayerGameState): MultiplayerGameStat
     const sonicBoomDebuff = enemy.debuffs.find((d: Debuff) => d.type === 'SONIC_BOOM');
     
     if (sonicBoomDebuff && sonicBoomDebuff.stacks > 0) {
-      const sonicBoomDamage = sonicBoomDebuff.stacks * 2;
+      // 全频共振：声爆每层3点伤害
+      const hasFullSpectrum = currentPlayer.permanentAbilities.find((a: ActiveAbility) => a.id === 'FULL_SPECTRUM');
+      const dmgPerStack = hasFullSpectrum ? 3 : 2;
+      const sonicBoomDamage = sonicBoomDebuff.stacks * dmgPerStack;
       // 声爆是真实伤害，直接扣除HP，不经过护甲
       enemy.hp = Math.max(0, enemy.hp - sonicBoomDamage);
-      
+
       // 清除声爆debuff
       enemy.debuffs = enemy.debuffs.filter((d: Debuff) => d.type !== 'SONIC_BOOM');
     }

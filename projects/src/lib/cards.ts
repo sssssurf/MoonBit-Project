@@ -292,10 +292,10 @@ export const xianYinCards: Card[] = [
   { id: 'xy-assassin-03', name: '超频驱动', nameEn: 'Overclock Drive', type: 'attack', archetype: 'basic', cost: 2, target: 'aoe', effect: '对全体造成 5 点伤害，每有声爆+2', designNote: 'AOE清场', baseDamage: 5 },
   { id: 'xy-assassin-04', name: '次声潜行', nameEn: 'Infrasonic Stealth', type: 'skill', archetype: 'basic', cost: 1, target: 'self', effect: '本回合下一张攻击牌伤害 +8。获得 3 点护甲', designNote: '防守+爆发准备', baseArmor: 3 },
   // 回声幻影流 (4张)
-  { id: 'xy-echo-01', name: '回声标记', nameEn: 'Echo Mark', type: 'ability', archetype: 'basic', cost: 2, target: 'self', effect: '【永久】每张牌回合末复制效果（伤害减半）', designNote: '一牌双响核心'},
+  { id: 'xy-echo-01', name: '回声标记', nameEn: 'Echo Mark', type: 'ability', archetype: 'basic', cost: 2, target: 'self', effect: '【永久】每当你附加声爆时，额外造成 2 点声波伤害', designNote: '声爆增伤能力'},
   { id: 'xy-echo-02', name: '相位镜像', nameEn: 'Phase Mirror', type: 'skill', archetype: 'basic', cost: 1, target: 'self', effect: '复制手牌中一张攻击牌（本回合有效）', designNote: '关键牌复制'},
   { id: 'xy-echo-03', name: '残响追击', nameEn: 'Afterimage Pursuit', type: 'attack', archetype: 'basic', cost: 2, target: 'single', effect: '造成 6 点伤害。打出3张以上牌翻倍', designNote: '高频出牌奖励', baseDamage: 6 },
-  { id: 'xy-echo-04', name: '全频共振', nameEn: 'Full Spectrum Resonance', type: 'ability', archetype: 'basic', cost: 3, target: 'self', effect: '【永久】附加声爆时额外+1层，声爆伤害+50%', designNote: '声爆质变能力'},
+  { id: 'xy-echo-04', name: '全频共振', nameEn: 'Full Spectrum Resonance', type: 'ability', archetype: 'basic', cost: 3, target: 'self', effect: '【永久】每当你附加声爆时，额外+1层。声爆结算时每层3点伤害', designNote: '声爆质变能力'},
 ];
 
 export const cardTypeConfig: Record<CardType, { label: string; color: string; borderColor: string; bg: string }> = {
