@@ -8,8 +8,8 @@
 | **项目方向** | 游戏引擎 / 卡牌策略游戏 |
 | **适用场景** | 单机卡牌对战、局域网多人对战、AI 难度挑战、生存模式 |
 | **实现语言** | MoonBit（主要）+ TypeScript（前端可视化） |
-| **GitHub** | https://github.com/sssssurf/MoonBit-Project |
-| **Gitlink** | （请在 Gitlink 创建仓库并同步） |
+| **GitHub** | https://github.com/sssssurf/abyssal-chord |
+| **Gitlink** | https://gitlink.org.cn/surf3/abyssal-chord |
 | **许可证** | Apache-2.0 |
 | **原创性** | 原创项目，卡牌体系与游戏机制为自主设计 |
 
