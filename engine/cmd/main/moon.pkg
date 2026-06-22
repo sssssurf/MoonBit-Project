@@ -1,5 +1,5 @@
 import {
-  "moonbit_dev/abyssal_chord" @lib,
+  "sssssurf/abyssal_chord" @lib,
 }
 
 options(

@@ -9,7 +9,7 @@
 //   "moonbitlang/x@0.4.6",
 // }
 
-name = "moonbit_dev/abyssal_chord"
+name = "sssssurf/abyssal_chord"
 
 version = "0.1.0"
 
